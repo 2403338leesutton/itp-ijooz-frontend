@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
     <!-- AIzaSyDQIJRGtDvCeuHtDLT9yopkjNEWlMYutJo -->
+    <!-- limit use of API key please-->
 <head>
     <title>Test link to Google Maps</title>
     <meta charset="UTF-8">
@@ -14,16 +15,30 @@
         <input type="text" id="destination" name="destination"><br><br>
         <button type="submit">Generate Google Maps Link</button>
     </form>
-    <br>
-    <a id="mapsLink" href="#" target="_blank">Open in Google Maps</a>
 
     <script>
         function updateLink() {
             const origin = encodeURIComponent(document.getElementById('origin').value);
             const destination = encodeURIComponent(document.getElementById('destination').value);
-            const link = `https://www.google.com/maps/dir/?api=&origin=${origin}&destination=${destination}`;
+            const link = `https://www.google.com/maps/dir/${origin}/${destination}`;
             document.getElementById('mapsLink').href = link;
         }
     </script>
+
+    <br>
+    <a id="mapsLink" href="#" target="_blank">Open in Google Maps</a>
+
+<br>
+<iframe
+  width="600"
+  height="450"
+  style="border:0"
+  loading="lazy"
+  allowfullscreen
+  referrerpolicy="no-referrer-when-downgrade"
+  src="https://www.google.com/maps/embed/v1/place?key=AIzaSyDQIJRGtDvCeuHtDLT9yopkjNEWlMYutJo
+    &q=Yishun+Industrial+Park+A,+Singapore+752106">
+</iframe>
+
 </body>
 </html>
