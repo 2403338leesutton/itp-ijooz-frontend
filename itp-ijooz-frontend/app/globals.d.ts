@@ -2,7 +2,7 @@ export {};
 
 declare global {
   interface Window {
-    initMap?: () => void; // <-- note the "?" here
+    initMap?: () => void;
   }
 
   const google: any;
