@@ -7,14 +7,31 @@ export default function Home() {
     // Map initialization function
     const initMap = () => {
       const map = new google.maps.Map(document.getElementById("map") as HTMLElement, {
-        center: { lat: 1.3521, lng: 103.8198 },
+        center: { lat: 1.3521, lng: 103.8198 }, // Singapore
         zoom: 11,
+      });
+
+      // Define stop coordinates
+      const stops = [
+        { name: "IJOOZ Location A", lat: 1.3402, lng: 103.8303 },
+        { name: "IJOOZ Location B", lat: 1.3502, lng: 103.8190 },
+        { name: "IJOOZ Location C", lat: 1.3605, lng: 103.8100 },
+        { name: "IJOOZ Location D", lat: 1.3308, lng: 103.8485 },
+      ];
+
+      // Add a marker for each stop
+      stops.forEach((stop) => {
+        new google.maps.Marker({
+          position: { lat: stop.lat, lng: stop.lng },
+          map,
+          title: stop.name,
+        });
       });
     };
 
     // Dynamically load Google Maps JS API
     const script = document.createElement("script");
-    script.src = `https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&callback=initMap`; // Replace with your real API key
+    script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyA96Du2_ijP7FHHrmceHobAo79VMyOxDt4&callback=initMap`;
     script.async = true;
     window.initMap = initMap;
     document.body.appendChild(script);
