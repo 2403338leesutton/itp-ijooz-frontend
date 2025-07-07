@@ -12,10 +12,14 @@ div.mycontainer {
   width:100%;
   overflow:auto;
 }
-div.mycontainer div {
-  width:50%;  
-  float:left;
-  margin: auto;
+div.mycontainer > div:first-child {
+  width: 75%;
+  float: left;
+}
+
+div.mycontainer > div:last-child {
+  width: 25%;
+  float: left;
 }
 </style>
 
@@ -36,8 +40,9 @@ div.mycontainer div {
         Enter machine / packing list ID below<br><br>
         <input id="text" type="text" value="" style="Width:20%" onblur='generateBarCode();' />
         <button>Click here to update QR code</button><br><br>
-        <img id='barcode' src="https://api.qrserver.com/v1/create-qr-code/?data=HelloWorld&amp;size=100x100" alt="" title="HELLO" width="250" height="250" />
-    </div>
+        <img id='barcode' src="https://api.qrserver.com/v1/create-qr-code/?data=HelloWorld&amp;size=100x100" alt="" title="QR code" width="250" height="250" />
+        <br>Click image to download
+      </div>
 </div>
 </body>
 
@@ -52,6 +57,22 @@ div.mycontainer div {
   var url = 'https://api.qrserver.com/v1/create-qr-code/?data=' + QRitem + '&amp;size=50x50';
   $('#barcode').attr('src', url);
 }
+
+document.getElementById('barcode').addEventListener('click', function () {
+    const imageUrl = this.src;
+
+    fetch(imageUrl)
+        .then(response => response.blob())
+        .then(blob => {
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'qr-code.png';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        })
+        .catch(error => console.error('Download failed:', error));
+});
 </script>
 
 </html>
