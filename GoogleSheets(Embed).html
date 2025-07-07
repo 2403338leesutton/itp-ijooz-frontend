@@ -7,20 +7,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 </head>
 
+<style>
+div.mycontainer {
+  width:100%;
+  overflow:auto;
+}
+div.mycontainer div {
+  width:50%;  
+  float:left;
+  margin: auto;
+}
+</style>
+
 <body>
+<div class="mycontainer">
+    <div>
+    <h2>Packing list</h2>    
+    <iframe src="https://docs.google.com/spreadsheets/d/1ts_kUE_qgm6lYAMyus2NogBujfm4U175_RQS3KcCacM/edit?usp=sharingwidget=false&amp;headers=false"
+        width="100%" 
+        height="500" 
+        frameborder="0">
+    </iframe>
+    </div>
 
+    <div>
+        <h2>Barcode generator</h2>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+        Enter machine / packing list ID below<br><br>
+        <input id="text" type="text" value="" style="Width:20%" onblur='generateBarCode();' />
+        <button>Click here to update QR code</button><br><br>
+        <img id='barcode' src="https://api.qrserver.com/v1/create-qr-code/?data=HelloWorld&amp;size=100x100" alt="" title="HELLO" width="250" height="250" />
+    </div>
+</div>
+</body>
 
-    
-<iframe src="https://docs.google.com/spreadsheets/d/1ts_kUE_qgm6lYAMyus2NogBujfm4U175_RQS3KcCacM/edit?usp=sharingwidget=false&amp;headers=false"
-    width="50%" 
-    height="500" 
-    frameborder="0">
-</iframe>
-
-<!--Embed code-->
+<!--Google Sheets embed code-->
 <!--https://docs.google.com/spreadsheets/d/e/2PACX-1vSqdTWr7U47NTh5ghjv3bOigk-kS0AxTC4CNJ8jLmY6yb82cvSV50FMHkFpe52BKenZr5wh2Ss6O2QS/pubhtml?-->
 <!--Link for sharing-->
 <!--https://docs.google.com/spreadsheets/d/1ts_kUE_qgm6lYAMyus2NogBujfm4U175_RQS3KcCacM/edit?usp=sharing-->
 
-</body>
+<script>
+    function generateBarCode() {
+  var QRitem = $('#text').val();
+  var url = 'https://api.qrserver.com/v1/create-qr-code/?data=' + QRitem + '&amp;size=50x50';
+  $('#barcode').attr('src', url);
+}
+</script>
+
 </html>
