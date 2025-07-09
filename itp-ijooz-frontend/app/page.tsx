@@ -13,16 +13,16 @@ const IJOOZ_HQ = {
 };
 
 const initialStops = [
-  { name: "IM1l1O04", address: "628555", lat: 1.3218, lng: 103.7071, eta: "10:15", status: "Pending" },
-  { name: "IM1l1O05", address: "639441", lat: 1.3324, lng: 103.6938, eta: "10:20", status: "Pending" },
-
-  { name: "IM1l1O64", address: "768731", lat: 1.4385, lng: 103.8350, eta: "10:30", status: "Pending" },
-  { name: "IM1l1O57", address: "768738", lat: 1.4390, lng: 103.8340, eta: "10:35", status: "Pending" },
-  { name: "IM1l1O76", address: "819651", lat: 1.3570, lng: 103.9870, eta: "10:40", status: "Pending" },
+  { name: "IM1l1O04", address: "628555", lat: 1.3218, lng: 103.7071, status: "Pending" },
+  { name: "IM1l1O05", address: "639441", lat: 1.3324, lng: 103.6938, status: "Pending" },
+  { name: "IM1l1O64", address: "768731", lat: 1.4385, lng: 103.8350, status: "Pending" },
+  { name: "IM1l1O57", address: "768738", lat: 1.4390, lng: 103.8340, status: "Pending" },
+  { name: "IM1l1O76", address: "819651", lat: 1.3570, lng: 103.9870, status: "Pending" },
 ];
 
 export default function Home() {
   const [stops, setStops] = useState(initialStops);
+  const [etas, setEtas] = useState<string[]>([]);
   const [selectedStop, setSelectedStop] = useState<any>(null);
   const [totalDuration, setTotalDuration] = useState<string>("");
 
@@ -32,8 +32,7 @@ export default function Home() {
         initMap();
       } else {
         const script = document.createElement("script");
-        script.src =
-          "https://maps.googleapis.com/maps/api/js?key=AIzaSyA-6lWqnsNnXubz9yi4CFXAAwUkd0Oyv4M&callback=initMap";
+        script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyA-6lWqnsNnXubz9yi4CFXAAwUkd0Oyv4M&callback=initMap`;
         script.async = true;
         document.body.appendChild(script);
         (window as any).initMap = initMap;
@@ -53,23 +52,20 @@ export default function Home() {
           strokeColor: "#4285F4",
           strokeOpacity: 0.7,
           strokeWeight: 5,
-          icons: [
-            {
-              icon: {
-                path: google.maps.SymbolPath.FORWARD_OPEN_ARROW,
-                scale: 2,
-                strokeOpacity: 1,
-              },
-              offset: "100%",
-              repeat: "100px",
+          icons: [{
+            icon: {
+              path: google.maps.SymbolPath.FORWARD_OPEN_ARROW,
+              scale: 2,
+              strokeOpacity: 1,
             },
-          ],
+            offset: "100%",
+            repeat: "100px",
+          }],
         },
       });
       directionsRenderer.setMap(map);
 
       const allStops = [IJOOZ_HQ, ...stops, IJOOZ_HQ];
-
       const waypoints = allStops.slice(1, -1).map((stop) => ({
         location: { lat: stop.lat, lng: stop.lng },
         stopover: true,
@@ -87,35 +83,40 @@ export default function Home() {
             directionsRenderer.setDirections(result);
             const routeLegs = result.routes[0].legs;
 
-            // Total duration
             const totalSecs = routeLegs.reduce((sum, leg) => sum + leg.duration.value, 0);
             const mins = Math.round(totalSecs / 60);
             setTotalDuration(`${mins} mins`);
 
-            // Marker A for IJOOZ HQ
+            const etaBase = new Date();
+            etaBase.setHours(10, 0, 0, 0); // Start time 10:00 AM
+
+            const newEtas: string[] = [];
+            let accumulated = 0;
+            for (let i = 0; i < stops.length; i++) {
+              accumulated += routeLegs[i].duration.value;
+              const eta = new Date(etaBase.getTime() + accumulated * 1000);
+              newEtas.push(`${eta.getHours().toString().padStart(2, "0")}:${eta.getMinutes().toString().padStart(2, "0")}`);
+            }
+            setEtas(newEtas);
+
+            // Marker A
             const markerA = new google.maps.Marker({
               position: routeLegs[0].start_location,
               map,
-              label: {
-                text: "A",
-                color: "white",
-                fontWeight: "bold",
-              },
+              label: { text: "A", color: "white", fontWeight: "bold" },
             });
-            markerA.addListener("click", () => setSelectedStop(IJOOZ_HQ));
+            markerA.addListener("click", () => setSelectedStop({ ...IJOOZ_HQ, eta: "10:00" }));
 
-            // Markers B onward
+            // Markers B onwards
             for (let i = 0; i < stops.length; i++) {
               const marker = new google.maps.Marker({
                 position: routeLegs[i].end_location,
                 map,
-                label: {
-                  text: String.fromCharCode(66 + i),
-                  color: "white",
-                  fontWeight: "bold",
-                },
+                label: { text: String.fromCharCode(66 + i), color: "white", fontWeight: "bold" },
               });
-              marker.addListener("click", () => setSelectedStop(stops[i]));
+              marker.addListener("click", () =>
+                setSelectedStop({ ...stops[i], eta: newEtas[i] })
+              );
             }
           }
         }
@@ -154,7 +155,8 @@ export default function Home() {
             {(provided) => (
               <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
                 {[IJOOZ_HQ, ...stops].map((stop, i) => {
-                  const isDraggable = i !== 0; // Don't allow dragging IJOOZ HQ
+                  const isDraggable = i !== 0;
+                  const eta = i === 0 ? "10:00" : etas[i - 1] || "--:--";
                   return isDraggable ? (
                     <Draggable key={i} draggableId={i.toString()} index={i - 1}>
                       {(provided) => (
@@ -162,7 +164,7 @@ export default function Home() {
                           ref={provided.innerRef}
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
-                          onClick={() => setSelectedStop(stop)}
+                          onClick={() => setSelectedStop({ ...stop, eta })}
                           className="bg-white text-black rounded-md shadow-sm px-4 py-3 flex justify-between items-center text-sm cursor-pointer"
                         >
                           <span>{stop.name}</span>
@@ -174,7 +176,7 @@ export default function Home() {
                     <div
                       key={i}
                       className="bg-white text-black rounded-md shadow-sm px-4 py-3 flex justify-between items-center text-sm"
-                      onClick={() => setSelectedStop(stop)}
+                      onClick={() => setSelectedStop({ ...stop, eta })}
                     >
                       <span>{stop.name}</span>
                       <span className="text-xs text-gray-500">{stop.address}</span>
