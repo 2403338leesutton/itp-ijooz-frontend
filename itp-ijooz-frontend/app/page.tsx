@@ -15,7 +15,6 @@ const IJOOZ_HQ = {
 const initialStops = [
   { name: "IM1l1O04", address: "628555", lat: 1.3218, lng: 103.7071 },
   { name: "IM1l1O05", address: "639441", lat: 1.3324, lng: 103.6938 },
-  { name: "IM1l1O06", address: "639441", lat: 1.3324, lng: 103.6938 },
   { name: "IM1l1O64", address: "768731", lat: 1.4385, lng: 103.835 },
   { name: "IM1l1O57", address: "768738", lat: 1.439, lng: 103.834 },
   { name: "IM1l1O76", address: "819651", lat: 1.357, lng: 103.987 },
@@ -27,13 +26,20 @@ export default function Home() {
   const [totalDuration, setTotalDuration] = useState("");
   const [etaStops, setEtaStops] = useState<any[]>([]);
   const [showTripSummary, setShowTripSummary] = useState(false);
+  const [totalDistance, setTotalDistance] = useState(0);
 
   const getEtaTime = (baseTime: Date, secondsToAdd: number) => {
     const eta = new Date(baseTime.getTime() + secondsToAdd * 1000);
-    return `${eta.getHours().toString().padStart(2, "0")}:${eta
-      .getMinutes()
-      .toString()
-      .padStart(2, "0")}`;
+    return `${eta.getHours().toString().padStart(2, "0")}:${eta.getMinutes().toString().padStart(2, "0")}`;
+  };
+
+  const haversine = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 6371.0;
+    const toRad = (deg: number) => (deg * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+    return R * 2 * Math.asin(Math.sqrt(a));
   };
 
   useEffect(() => {
@@ -42,8 +48,7 @@ export default function Home() {
         initMap();
       } else {
         const script = document.createElement("script");
-        script.src =
-          "https://maps.googleapis.com/maps/api/js?key=AIzaSyA-6lWqnsNnXubz9yi4CFXAAwUkd0Oyv4M&callback=initMap";
+        script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyA-6lWqnsNnXubz9yi4CFXAAwUkd0Oyv4M&callback=initMap";
         script.async = true;
         document.body.appendChild(script);
         (window as any).initMap = initMap;
@@ -68,6 +73,7 @@ export default function Home() {
 
       directionsRenderer.setMap(map);
       const allStops = [IJOOZ_HQ, ...stops, IJOOZ_HQ];
+
       const waypoints = allStops.slice(1, -1).map((stop) => ({
         location: { lat: stop.lat, lng: stop.lng },
         stopover: true,
@@ -97,8 +103,15 @@ export default function Home() {
             });
 
             setEtaStops(updatedStops);
+            setTotalDuration(`${Math.round(cumulativeSeconds / 60)} mins`);
 
-            // Set markers
+            // Total distance
+            let distance = 0;
+            for (let i = 0; i < allStops.length - 1; i++) {
+              distance += haversine(allStops[i].lat, allStops[i].lng, allStops[i + 1].lat, allStops[i + 1].lng);
+            }
+            setTotalDistance(Math.round(distance * 10) / 10);
+
             new google.maps.Marker({
               position: routeLegs[0].start_location,
               map,
@@ -109,25 +122,15 @@ export default function Home() {
               new google.maps.Marker({
                 position: routeLegs[i].end_location,
                 map,
-                label: {
-                  text: String.fromCharCode(66 + i),
-                  color: "white",
-                  fontWeight: "bold",
-                },
+                label: { text: String.fromCharCode(66 + i), color: "white", fontWeight: "bold" },
               }).addListener("click", () => setSelectedStop(stop));
             });
-
-            // Total duration
-            const totalSecs = routeLegs.reduce((sum, leg) => sum + leg.duration.value, 0);
-            setTotalDuration(`${Math.round(totalSecs / 60)} mins`);
           }
         }
       );
     };
 
-    if (typeof window !== "undefined") {
-      loadGoogleMaps();
-    }
+    if (typeof window !== "undefined") loadGoogleMaps();
   }, [stops]);
 
   const onDragEnd = (result: any) => {
@@ -202,7 +205,12 @@ export default function Home() {
         <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-60 z-50 flex items-center justify-center">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
             <h2 className="text-lg font-bold text-center mb-4">Route Summary</h2>
-            <ol className="space-y-2 text-sm">
+            <p className="text-sm text-center mb-2">
+              Total Stops: {stops.length + 1} <br />
+              Total Duration: {totalDuration} <br />
+              Total Distance: {totalDistance} km
+            </p>
+            <ol className="space-y-2 text-sm mt-4">
               <li>
                 <strong>{IJOOZ_HQ.name}</strong> – {IJOOZ_HQ.address} – ETA: 10:00
               </li>
