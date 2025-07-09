@@ -1,19 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
 
-const IJOOZ_HQ = { name: "IJOOZ HQ", lat: 1.4375, lng: 103.8355, address: "768736", eta: "10:00", status: "Start" };
+const IJOOZ_HQ = {
+  name: "IJOOZ HQ",
+  lat: 1.4375,
+  lng: 103.8355,
+  address: "768736",
+  eta: "10:00",
+  status: "Start",
+};
 
-const stops = [
-  { name: "IJOOZ Location A", lat: 1.3402, lng: 103.8303, address: "648310", eta: "10:15", status: "Pending" },
-  { name: "IJOOZ Location B", lat: 1.3502, lng: 103.819, address: "648320", eta: "10:20", status: "Pending" },
-  { name: "IJOOZ Location C", lat: 1.3605, lng: 103.81, address: "648330", eta: "10:30", status: "Pending" },
-  { name: "IJOOZ Location D", lat: 1.3308, lng: 103.8485, address: "648340", eta: "10:40", status: "Pending" },
+const initialStops = [
+  { name: "IM1l1O04", address: "628555", lat: 1.3218, lng: 103.7071, eta: "10:15", status: "Pending" },
+  { name: "IM1l1O05", address: "639441", lat: 1.3324, lng: 103.6938, eta: "10:20", status: "Pending" },
+
+  { name: "IM1l1O64", address: "768731", lat: 1.4385, lng: 103.8350, eta: "10:30", status: "Pending" },
+  { name: "IM1l1O57", address: "768738", lat: 1.4390, lng: 103.8340, eta: "10:35", status: "Pending" },
+  { name: "IM1l1O76", address: "819651", lat: 1.3570, lng: 103.9870, eta: "10:40", status: "Pending" },
 ];
 
 export default function Home() {
+  const [stops, setStops] = useState(initialStops);
   const [selectedStop, setSelectedStop] = useState<any>(null);
-  const [totalDistance, setTotalDistance] = useState<string>("");
+  const [totalDuration, setTotalDuration] = useState<string>("");
 
   useEffect(() => {
     const loadGoogleMaps = () => {
@@ -32,7 +43,7 @@ export default function Home() {
     const initMap = () => {
       const map = new google.maps.Map(document.getElementById("map") as HTMLElement, {
         center: IJOOZ_HQ,
-        zoom: 13,
+        zoom: 12,
       });
 
       const directionsService = new google.maps.DirectionsService();
@@ -57,7 +68,7 @@ export default function Home() {
       });
       directionsRenderer.setMap(map);
 
-      const allStops = [IJOOZ_HQ, ...stops, IJOOZ_HQ]; // loop back
+      const allStops = [IJOOZ_HQ, ...stops, IJOOZ_HQ];
 
       const waypoints = allStops.slice(1, -1).map((stop) => ({
         location: { lat: stop.lat, lng: stop.lng },
@@ -70,20 +81,18 @@ export default function Home() {
           destination: allStops[allStops.length - 1],
           waypoints,
           travelMode: google.maps.TravelMode.DRIVING,
-          optimizeWaypoints: false,
         },
         (result, status) => {
           if (status === "OK" && result) {
             directionsRenderer.setDirections(result);
-
             const routeLegs = result.routes[0].legs;
 
-            // Total distance
-            const totalMeters = routeLegs.reduce((sum, leg) => sum + leg.distance.value, 0);
-            const km = (totalMeters / 1000).toFixed(1);
-            setTotalDistance(`${km} km`);
+            // Total duration
+            const totalSecs = routeLegs.reduce((sum, leg) => sum + leg.duration.value, 0);
+            const mins = Math.round(totalSecs / 60);
+            setTotalDuration(`${mins} mins`);
 
-            // Marker A for IJOOZ HQ (only once)
+            // Marker A for IJOOZ HQ
             const markerA = new google.maps.Marker({
               position: routeLegs[0].start_location,
               map,
@@ -95,13 +104,13 @@ export default function Home() {
             });
             markerA.addListener("click", () => setSelectedStop(IJOOZ_HQ));
 
-            // Markers B-E for stops
+            // Markers B onward
             for (let i = 0; i < stops.length; i++) {
               const marker = new google.maps.Marker({
                 position: routeLegs[i].end_location,
                 map,
                 label: {
-                  text: String.fromCharCode(66 + i), // B, C, D, E
+                  text: String.fromCharCode(66 + i),
                   color: "white",
                   fontWeight: "bold",
                 },
@@ -116,7 +125,15 @@ export default function Home() {
     if (typeof window !== "undefined") {
       loadGoogleMaps();
     }
-  }, []);
+  }, [stops]);
+
+  const onDragEnd = (result: any) => {
+    if (!result.destination) return;
+    const reordered = Array.from(stops);
+    const [moved] = reordered.splice(result.source.index, 1);
+    reordered.splice(result.destination.index, 0, moved);
+    setStops(reordered);
+  };
 
   return (
     <div className="min-h-screen flex flex-col font-sans bg-white text-black">
@@ -128,22 +145,47 @@ export default function Home() {
 
       <div className="bg-gray-100 px-4 py-5 sm:px-6 sm:py-6">
         <div className="flex flex-col sm:flex-row sm:justify-between text-sm text-gray-700 font-medium mb-3">
-          <span>{stops.length + 2} Stops (incl. IJOOZ HQ start & end)</span>
-          <span className="mt-1 sm:mt-0">Total Trip: {totalDistance}</span>
+          <span>{stops.length + 1} Stops (incl. IJOOZ HQ)</span>
+          <span className="mt-1 sm:mt-0">Total Trip: {totalDuration}</span>
         </div>
 
-        <div className="space-y-3">
-          {[IJOOZ_HQ, ...stops].map((stop, i) => (
-            <div
-              key={i}
-              className="bg-white text-black rounded-md shadow-sm px-4 py-3 flex justify-between items-center text-sm cursor-pointer"
-              onClick={() => setSelectedStop(stop)}
-            >
-              <span>{stop.name}</span>
-              <span className="text-xs text-gray-500">{stop.address}</span>
-            </div>
-          ))}
-        </div>
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable droppableId="stops">
+            {(provided) => (
+              <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
+                {[IJOOZ_HQ, ...stops].map((stop, i) => {
+                  const isDraggable = i !== 0; // Don't allow dragging IJOOZ HQ
+                  return isDraggable ? (
+                    <Draggable key={i} draggableId={i.toString()} index={i - 1}>
+                      {(provided) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          onClick={() => setSelectedStop(stop)}
+                          className="bg-white text-black rounded-md shadow-sm px-4 py-3 flex justify-between items-center text-sm cursor-pointer"
+                        >
+                          <span>{stop.name}</span>
+                          <span className="text-xs text-gray-500">{stop.address}</span>
+                        </div>
+                      )}
+                    </Draggable>
+                  ) : (
+                    <div
+                      key={i}
+                      className="bg-white text-black rounded-md shadow-sm px-4 py-3 flex justify-between items-center text-sm"
+                      onClick={() => setSelectedStop(stop)}
+                    >
+                      <span>{stop.name}</span>
+                      <span className="text-xs text-gray-500">{stop.address}</span>
+                    </div>
+                  );
+                })}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
       </div>
 
       {selectedStop && (
