@@ -13,18 +13,28 @@ const IJOOZ_HQ = {
 };
 
 const initialStops = [
-  { name: "IM1l1O04", address: "628555", lat: 1.3218, lng: 103.7071, status: "Pending" },
-  { name: "IM1l1O05", address: "639441", lat: 1.3324, lng: 103.6938, status: "Pending" },
-  { name: "IM1l1O64", address: "768731", lat: 1.4385, lng: 103.8350, status: "Pending" },
-  { name: "IM1l1O57", address: "768738", lat: 1.4390, lng: 103.8340, status: "Pending" },
-  { name: "IM1l1O76", address: "819651", lat: 1.3570, lng: 103.9870, status: "Pending" },
+  { name: "IM1l1O04", address: "628555", lat: 1.3218, lng: 103.7071 },
+  { name: "IM1l1O05", address: "639441", lat: 1.3324, lng: 103.6938 },
+  { name: "IM1l1O06", address: "639441", lat: 1.3324, lng: 103.6938 },
+  { name: "IM1l1O64", address: "768731", lat: 1.4385, lng: 103.835 },
+  { name: "IM1l1O57", address: "768738", lat: 1.439, lng: 103.834 },
+  { name: "IM1l1O76", address: "819651", lat: 1.357, lng: 103.987 },
 ];
 
 export default function Home() {
   const [stops, setStops] = useState(initialStops);
-  const [etas, setEtas] = useState<string[]>([]);
   const [selectedStop, setSelectedStop] = useState<any>(null);
-  const [totalDuration, setTotalDuration] = useState<string>("");
+  const [totalDuration, setTotalDuration] = useState("");
+  const [etaStops, setEtaStops] = useState<any[]>([]);
+  const [showTripSummary, setShowTripSummary] = useState(false);
+
+  const getEtaTime = (baseTime: Date, secondsToAdd: number) => {
+    const eta = new Date(baseTime.getTime() + secondsToAdd * 1000);
+    return `${eta.getHours().toString().padStart(2, "0")}:${eta
+      .getMinutes()
+      .toString()
+      .padStart(2, "0")}`;
+  };
 
   useEffect(() => {
     const loadGoogleMaps = () => {
@@ -32,7 +42,8 @@ export default function Home() {
         initMap();
       } else {
         const script = document.createElement("script");
-        script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyA-6lWqnsNnXubz9yi4CFXAAwUkd0Oyv4M&callback=initMap`;
+        script.src =
+          "https://maps.googleapis.com/maps/api/js?key=AIzaSyA-6lWqnsNnXubz9yi4CFXAAwUkd0Oyv4M&callback=initMap";
         script.async = true;
         document.body.appendChild(script);
         (window as any).initMap = initMap;
@@ -52,19 +63,10 @@ export default function Home() {
           strokeColor: "#4285F4",
           strokeOpacity: 0.7,
           strokeWeight: 5,
-          icons: [{
-            icon: {
-              path: google.maps.SymbolPath.FORWARD_OPEN_ARROW,
-              scale: 2,
-              strokeOpacity: 1,
-            },
-            offset: "100%",
-            repeat: "100px",
-          }],
         },
       });
-      directionsRenderer.setMap(map);
 
+      directionsRenderer.setMap(map);
       const allStops = [IJOOZ_HQ, ...stops, IJOOZ_HQ];
       const waypoints = allStops.slice(1, -1).map((stop) => ({
         location: { lat: stop.lat, lng: stop.lng },
@@ -82,42 +84,42 @@ export default function Home() {
           if (status === "OK" && result) {
             directionsRenderer.setDirections(result);
             const routeLegs = result.routes[0].legs;
+            const baseTime = new Date("2025-01-01T10:00:00");
+            let cumulativeSeconds = 0;
 
-            const totalSecs = routeLegs.reduce((sum, leg) => sum + leg.duration.value, 0);
-            const mins = Math.round(totalSecs / 60);
-            setTotalDuration(`${mins} mins`);
+            const updatedStops = stops.map((stop, i) => {
+              cumulativeSeconds += routeLegs[i].duration.value;
+              return {
+                ...stop,
+                eta: getEtaTime(baseTime, cumulativeSeconds),
+                status: "Pending",
+              };
+            });
 
-            const etaBase = new Date();
-            etaBase.setHours(10, 0, 0, 0); // Start time 10:00 AM
+            setEtaStops(updatedStops);
 
-            const newEtas: string[] = [];
-            let accumulated = 0;
-            for (let i = 0; i < stops.length; i++) {
-              accumulated += routeLegs[i].duration.value;
-              const eta = new Date(etaBase.getTime() + accumulated * 1000);
-              newEtas.push(`${eta.getHours().toString().padStart(2, "0")}:${eta.getMinutes().toString().padStart(2, "0")}`);
-            }
-            setEtas(newEtas);
-
-            // Marker A
-            const markerA = new google.maps.Marker({
+            // Set markers
+            new google.maps.Marker({
               position: routeLegs[0].start_location,
               map,
               label: { text: "A", color: "white", fontWeight: "bold" },
-            });
-            markerA.addListener("click", () => setSelectedStop({ ...IJOOZ_HQ, eta: "10:00" }));
+            }).addListener("click", () => setSelectedStop(IJOOZ_HQ));
 
-            // Markers B onwards
-            for (let i = 0; i < stops.length; i++) {
-              const marker = new google.maps.Marker({
+            updatedStops.forEach((stop, i) => {
+              new google.maps.Marker({
                 position: routeLegs[i].end_location,
                 map,
-                label: { text: String.fromCharCode(66 + i), color: "white", fontWeight: "bold" },
-              });
-              marker.addListener("click", () =>
-                setSelectedStop({ ...stops[i], eta: newEtas[i] })
-              );
-            }
+                label: {
+                  text: String.fromCharCode(66 + i),
+                  color: "white",
+                  fontWeight: "bold",
+                },
+              }).addListener("click", () => setSelectedStop(stop));
+            });
+
+            // Total duration
+            const totalSecs = routeLegs.reduce((sum, leg) => sum + leg.duration.value, 0);
+            setTotalDuration(`${Math.round(totalSecs / 60)} mins`);
           }
         }
       );
@@ -154,9 +156,8 @@ export default function Home() {
           <Droppable droppableId="stops">
             {(provided) => (
               <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
-                {[IJOOZ_HQ, ...stops].map((stop, i) => {
+                {[IJOOZ_HQ, ...etaStops].map((stop, i) => {
                   const isDraggable = i !== 0;
-                  const eta = i === 0 ? "10:00" : etas[i - 1] || "--:--";
                   return isDraggable ? (
                     <Draggable key={i} draggableId={i.toString()} index={i - 1}>
                       {(provided) => (
@@ -164,7 +165,7 @@ export default function Home() {
                           ref={provided.innerRef}
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
-                          onClick={() => setSelectedStop({ ...stop, eta })}
+                          onClick={() => setSelectedStop(stop)}
                           className="bg-white text-black rounded-md shadow-sm px-4 py-3 flex justify-between items-center text-sm cursor-pointer"
                         >
                           <span>{stop.name}</span>
@@ -176,7 +177,7 @@ export default function Home() {
                     <div
                       key={i}
                       className="bg-white text-black rounded-md shadow-sm px-4 py-3 flex justify-between items-center text-sm"
-                      onClick={() => setSelectedStop({ ...stop, eta })}
+                      onClick={() => setSelectedStop(stop)}
                     >
                       <span>{stop.name}</span>
                       <span className="text-xs text-gray-500">{stop.address}</span>
@@ -188,7 +189,38 @@ export default function Home() {
             )}
           </Droppable>
         </DragDropContext>
+
+        <button
+          onClick={() => setShowTripSummary(true)}
+          className="mt-5 w-full bg-blue-600 text-white py-2 rounded-md"
+        >
+          View Trip Summary
+        </button>
       </div>
+
+      {showTripSummary && (
+        <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-60 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg max-w-md w-full p-6">
+            <h2 className="text-lg font-bold text-center mb-4">Route Summary</h2>
+            <ol className="space-y-2 text-sm">
+              <li>
+                <strong>{IJOOZ_HQ.name}</strong> – {IJOOZ_HQ.address} – ETA: 10:00
+              </li>
+              {etaStops.map((stop, i) => (
+                <li key={i}>
+                  <strong>{stop.name}</strong> – {stop.address} – ETA: {stop.eta}
+                </li>
+              ))}
+            </ol>
+            <button
+              onClick={() => setShowTripSummary(false)}
+              className="w-full mt-5 py-2 bg-blue-600 text-white rounded-md"
+            >
+              Close Summary
+            </button>
+          </div>
+        </div>
+      )}
 
       {selectedStop && (
         <div className="fixed bottom-0 left-0 w-full bg-white border-t p-5 shadow-xl z-50">
