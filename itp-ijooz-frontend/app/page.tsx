@@ -50,23 +50,38 @@ export default function Home() {
         (result, status) => {
           if (status === "OK" && result) {
             directionsRenderer.setDirections(result);
+
+            const legs = result.routes[0].legs;
+
+            // Place markers at accurate route points
+            legs.forEach((leg, index) => {
+              const marker = new google.maps.Marker({
+                position: leg.start_location,
+                map,
+                label: {
+                  text: String.fromCharCode(65 + index),
+                  color: "white",
+                  fontWeight: "bold",
+                },
+              });
+              marker.addListener("click", () => setSelectedStop(stops[index]));
+            });
+
+            // Add final destination marker
+            const lastIndex = legs.length;
+            const lastMarker = new google.maps.Marker({
+              position: legs[lastIndex - 1].end_location,
+              map,
+              label: {
+                text: String.fromCharCode(65 + lastIndex),
+                color: "white",
+                fontWeight: "bold",
+              },
+            });
+            lastMarker.addListener("click", () => setSelectedStop(stops[lastIndex]));
           }
         }
       );
-
-      stops.forEach((stop, index) => {
-        const marker = new google.maps.Marker({
-          position: { lat: stop.lat, lng: stop.lng },
-          map,
-          label: {
-            text: String.fromCharCode(65 + index),
-            color: "white",
-            fontWeight: "bold",
-          },
-        });
-
-        marker.addListener("click", () => setSelectedStop(stop));
-      });
     };
 
     if (typeof window !== "undefined") {
