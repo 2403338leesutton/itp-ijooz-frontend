@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+const IJOOZ_HQ = { name: "IJOOZ HQ", lat: 1.4375, lng: 103.8355, address: "768736", eta: "10:00", status: "Start" };
+
 const stops = [
   { name: "IJOOZ Location A", lat: 1.3402, lng: 103.8303, address: "648310", eta: "10:15", status: "Pending" },
   { name: "IJOOZ Location B", lat: 1.3502, lng: 103.819, address: "648320", eta: "10:20", status: "Pending" },
@@ -11,6 +13,7 @@ const stops = [
 
 export default function Home() {
   const [selectedStop, setSelectedStop] = useState<any>(null);
+  const [totalDistance, setTotalDistance] = useState<string>("");
 
   useEffect(() => {
     const loadGoogleMaps = () => {
@@ -18,7 +21,8 @@ export default function Home() {
         initMap();
       } else {
         const script = document.createElement("script");
-        script.src = `https://maps.googleapis.com/maps/api/js?key=AIzaSyA-6lWqnsNnXubz9yi4CFXAAwUkd0Oyv4M&callback=initMap`;
+        script.src =
+          "https://maps.googleapis.com/maps/api/js?key=AIzaSyA-6lWqnsNnXubz9yi4CFXAAwUkd0Oyv4M&callback=initMap";
         script.async = true;
         document.body.appendChild(script);
         (window as any).initMap = initMap;
@@ -27,58 +31,83 @@ export default function Home() {
 
     const initMap = () => {
       const map = new google.maps.Map(document.getElementById("map") as HTMLElement, {
-        center: stops[0],
+        center: IJOOZ_HQ,
         zoom: 13,
       });
 
       const directionsService = new google.maps.DirectionsService();
-      const directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true });
+      const directionsRenderer = new google.maps.DirectionsRenderer({
+        suppressMarkers: true,
+        polylineOptions: {
+          strokeColor: "#4285F4",
+          strokeOpacity: 0.7,
+          strokeWeight: 5,
+          icons: [
+            {
+              icon: {
+                path: google.maps.SymbolPath.FORWARD_OPEN_ARROW,
+                scale: 2,
+                strokeOpacity: 1,
+              },
+              offset: "100%",
+              repeat: "100px",
+            },
+          ],
+        },
+      });
       directionsRenderer.setMap(map);
 
-      const waypoints = stops.slice(1, -1).map((stop) => ({
+      const allStops = [IJOOZ_HQ, ...stops, IJOOZ_HQ]; // loop back
+
+      const waypoints = allStops.slice(1, -1).map((stop) => ({
         location: { lat: stop.lat, lng: stop.lng },
         stopover: true,
       }));
 
       directionsService.route(
         {
-          origin: stops[0],
-          destination: stops[stops.length - 1],
+          origin: allStops[0],
+          destination: allStops[allStops.length - 1],
           waypoints,
           travelMode: google.maps.TravelMode.DRIVING,
+          optimizeWaypoints: false,
         },
         (result, status) => {
           if (status === "OK" && result) {
             directionsRenderer.setDirections(result);
 
-            const legs = result.routes[0].legs;
+            const routeLegs = result.routes[0].legs;
 
-            // Place markers at accurate route points
-            legs.forEach((leg, index) => {
-              const marker = new google.maps.Marker({
-                position: leg.start_location,
-                map,
-                label: {
-                  text: String.fromCharCode(65 + index),
-                  color: "white",
-                  fontWeight: "bold",
-                },
-              });
-              marker.addListener("click", () => setSelectedStop(stops[index]));
-            });
+            // Total distance
+            const totalMeters = routeLegs.reduce((sum, leg) => sum + leg.distance.value, 0);
+            const km = (totalMeters / 1000).toFixed(1);
+            setTotalDistance(`${km} km`);
 
-            // Add final destination marker
-            const lastIndex = legs.length;
-            const lastMarker = new google.maps.Marker({
-              position: legs[lastIndex - 1].end_location,
+            // Marker A for IJOOZ HQ (only once)
+            const markerA = new google.maps.Marker({
+              position: routeLegs[0].start_location,
               map,
               label: {
-                text: String.fromCharCode(65 + lastIndex),
+                text: "A",
                 color: "white",
                 fontWeight: "bold",
               },
             });
-            lastMarker.addListener("click", () => setSelectedStop(stops[lastIndex]));
+            markerA.addListener("click", () => setSelectedStop(IJOOZ_HQ));
+
+            // Markers B-E for stops
+            for (let i = 0; i < stops.length; i++) {
+              const marker = new google.maps.Marker({
+                position: routeLegs[i].end_location,
+                map,
+                label: {
+                  text: String.fromCharCode(66 + i), // B, C, D, E
+                  color: "white",
+                  fontWeight: "bold",
+                },
+              });
+              marker.addListener("click", () => setSelectedStop(stops[i]));
+            }
           }
         }
       );
@@ -99,12 +128,12 @@ export default function Home() {
 
       <div className="bg-gray-100 px-4 py-5 sm:px-6 sm:py-6">
         <div className="flex flex-col sm:flex-row sm:justify-between text-sm text-gray-700 font-medium mb-3">
-          <span>{stops.length} Stops</span>
-          <span className="mt-1 sm:mt-0">Total Trip: 25 mins</span>
+          <span>{stops.length + 2} Stops (incl. IJOOZ HQ start & end)</span>
+          <span className="mt-1 sm:mt-0">Total Trip: {totalDistance}</span>
         </div>
 
         <div className="space-y-3">
-          {stops.map((stop, i) => (
+          {[IJOOZ_HQ, ...stops].map((stop, i) => (
             <div
               key={i}
               className="bg-white text-black rounded-md shadow-sm px-4 py-3 flex justify-between items-center text-sm cursor-pointer"
