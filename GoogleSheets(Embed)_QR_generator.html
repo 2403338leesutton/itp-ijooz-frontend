@@ -9,17 +9,32 @@
 
 <style>
 div.mycontainer {
-  width:100%;
-  overflow:auto;
+  width: 100%;
+  overflow: auto;
+  display: flex;
+  flex-wrap: wrap;
 }
-div.mycontainer > div:first-child {
-  width: 75%;
-  float: left;
+div.mycontainer > div {
+  box-sizing: border-box;
+  padding: 10px;
 }
 
+/* desktop */
+div.mycontainer > div:first-child {
+  width: 75%;
+}
 div.mycontainer > div:last-child {
   width: 25%;
-  float: left;
+}
+
+/* mobile  */
+@media screen and (max-width: 768px) {
+  div.mycontainer {
+    flex-direction: column;
+  }
+  div.mycontainer > div {
+    width: 100%;
+  }
 }
 </style>
 
