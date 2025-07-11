@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>IJOOZ Frontend Homepage</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+        }
+        header {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: orange;
+            border-bottom: 5px solid orange; /* 🔥 Orange bottom border */
+            padding: 10px 0;
+        }
+        header img {
+            max-height: 120px;
+        }
+        h1 {
+            color: #333;
+            margin: 30px 0 20px;
+            text-align: center;
+            padding: 0 10px;
+        }
+        .button-container {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-bottom: 40px;
+        }
+        .square-button {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 200px;
+            height: 200px;
+            background-color: #0078D7;
+            color: #fff;
+            font-size: 20px;
+            font-weight: bold;
+            text-decoration: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .square-button img {
+            max-height: 128px;
+            margin-bottom: 10px;
+        }
+        .square-button:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+        }
+        @media (max-width: 600px) {
+            .square-button {
+                width: 80%;
+                height: 150px;
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="images/ijooz-logo.png" alt="IJOOZ Logo" />
+    </header>
+    <h1>Welcome to IJOOZ Homepage</h1>
+    <div class="button-container">
+        <a href="GoogleSheets(Embed).html" class="square-button">
+            <img src="images/schedulers.png" alt="Schedulers">
+            For schedulers
+        </a>
+        <a href="(2)testHTML.html" class="square-button">
+            <img src="images/drivers.png" alt="Drivers">
+            For drivers
+        </a>
+    </div>
+</body>
+</html>
