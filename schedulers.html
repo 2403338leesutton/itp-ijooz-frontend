@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>To-Do List Sheets Embed</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        header {
+            width: 100%;
+            background-color: orange;
+            color: white;
+            text-align: center;
+            padding: 15px 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 1000;
+        }
+        header h1 {
+            margin: 0;
+        }
+        .back-button {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 20px;
+            background-color: #0078D7;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .back-button:hover {
+            background-color: #005bb5;
+        }
+
+        div.mycontainer {
+            margin-top: 100px;
+            width: 100%;
+            overflow: auto;
+            display: flex;
+            flex-wrap: wrap;
+        }
+        div.mycontainer > div {
+            box-sizing: border-box;
+            padding: 10px;
+        }
+
+        div.mycontainer > div:first-child {
+            width: 75%;
+        }
+        div.mycontainer > div:last-child {
+            width: 25%;
+        }
+
+        @media screen and (max-width: 768px) {
+            div.mycontainer {
+                flex-direction: column;
+            }
+            div.mycontainer > div {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>IJOOZ Scheduler</h1>
+    <a href="index.html" class="back-button">Back to Home</a>
+</header>
+
+<div class="mycontainer">
+    <div>
+        <h2>Packing List</h2>    
+        <iframe src="https://docs.google.com/spreadsheets/d/1ts_kUE_qgm6lYAMyus2NogBujfm4U175_RQS3KcCacM/edit?usp=sharingwidget=false&amp;headers=false"
+            width="100%" 
+            height="500" 
+            frameborder="0">
+        </iframe>
+    </div>
+
+    <div>
+        <h2>Barcode Generator</h2>
+        <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.2/jquery.min.js"></script>
+        Enter machine / packing list ID below<br><br>
+        <input id="text" type="text" value="" style="Width:20%" onblur='generateBarCode();' />
+        <button>Click here to update QR code</button><br><br>
+        <img id='barcode' src="https://api.qrserver.com/v1/create-qr-code/?data=HelloWorld&amp;size=100x100" alt="" title="QR code" width="250" height="250" />
+        <br>Click image to download
+    </div>
+</div>
+
+<script>
+    function generateBarCode() {
+        var QRitem = $('#text').val();
+        var url = 'https://api.qrserver.com/v1/create-qr-code/?data=' + QRitem + '&amp;size=50x50';
+        $('#barcode').attr('src', url);
+    }
+
+    document.getElementById('barcode').addEventListener('click', function () {
+        const imageUrl = this.src;
+
+        fetch(imageUrl)
+            .then(response => response.blob())
+            .then(blob => {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'qr-code.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            })
+            .catch(error => console.error('Download failed:', error));
+    });
+</script>
+
+</body>
+</html>
