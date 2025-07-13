@@ -1,261 +1,378 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IJOOZ Delivery Route Optimizer</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            background-color: white;
-            color: black;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>IJOOZ Delivery Route Optimizer</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background-color: white;
+      color: black;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
 
-        header {
-            width: 100%;
-            background-color: orange;
-            color: white;
-            text-align: center;
-            padding: 10px 0;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 1000;
-        }
+    header {
+      width: 100%;
+      background-color: orange;
+      color: white;
+      text-align: center;
+      padding: 10px 0;
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1000;
+    }
 
-        header h1 {
-            margin: 0;
-        }
+    header h1 {
+      margin: 0;
+    }
 
-        .back-button {
-            display: inline-block;
-            margin-top: 0px;
-            padding: 10px 20px;
-            background-color: #0078D7;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-size: 16px;
-        }
+    .back-button {
+      display: inline-block;
+      margin-top: 5px;
+      padding: 10px 20px;
+      background-color: #0078D7;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 16px;
+    }
 
-        .back-button:hover {
-            background-color: #005bb5;
-        }
+    .back-button:hover {
+      background-color: #005bb5;
+    }
 
-        #map {
-            width: 100%;
-            height: 300px;
-            padding-top: 100px;
-            margin-top: 110px;
-        }
+    #map {
+      width: 100%;
+      height: 300px;
+      padding-top: 100px;
+      margin-top: 110px;
+    }
 
-        .content {
-            background-color: #f7fafc;
-            padding: 20px;
-            flex-grow: 1;
-        }
+    .content {
+      background-color: #f7fafc;
+      padding: 20px;
+      flex-grow: 1;
+    }
 
-        .stats {
-            display: flex;
-            justify-content: space-between;
-            font-size: 14px;
-            color: #4a5568;
-            margin-bottom: 20px;
-        }
+    .stats {
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+      color: #4a5568;
+      margin-bottom: 20px;
+    }
 
-        .location {
-            background-color: white;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            font-size: 14px;
-            cursor: pointer;
-        }
+    .location {
+      background-color: white;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      font-size: 14px;
+      cursor: grab;
+    }
 
-        .location.expanded {
-            background-color: #f0f0f0;
-        }
+    .location.dragging {
+      opacity: 0.5;
+    }
 
-        .location .expandable-containers {
-            display: none;
-            margin-top: 10px;
-            gap: 10px;
-            flex-direction: row;
-            flex-wrap: wrap;
-        }
+    .detail-panel {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background-color: white;
+      border-top: 1px solid #ccc;
+      padding: 20px;
+      box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.15);
+      z-index: 1001;
+    }
 
-        .location.expanded .expandable-containers {
-            display: flex;
-        }
+    .detail-panel h2 {
+      margin-top: 0;
+      font-size: 18px;
+      color: #2c5282;
+    }
 
-        .square-button {
-            width: 100px;
-            height: 100px;
-            background-color: gray;
-            color: white;
-            text-align: center;
-            border-radius: 8px;
-            position: relative;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
+    .detail-panel .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin: 15px 0;
+    }
 
-        .square-button:hover {
-            background-color: darkgray;
-        }
+    .detail-panel button {
+      padding: 10px;
+      border: none;
+      font-size: 20px;
+      border-radius: 8px;
+      color: white;
+      cursor: pointer;
+    }
 
-        .green {
-            background-color: green;
-        }
+    .detail-panel .camera { background-color: #4a5568; }
+    .detail-panel .complete { background-color: #38a169; }
+    .detail-panel .fail { background-color: #e53e3e; }
+    .detail-panel .parcel { background-color: #6b46c1; }
+    .detail-panel .close-btn {
+      background: none;
+      color: #2c5282;
+      font-size: 14px;
+      text-align: center;
+      width: 100%;
+      display: block;
+      padding-top: 10px;
+      border-top: 1px solid #ccc;
+    }
 
-        .red {
-            background-color: red;
-        }
-
-        .yellow {
-            background-color: yellow;
-            color: black;
-        }
-
-        .blue {
-            background-color: blue;
-        }
-
-        footer {
-            background-color: #edf2f7;
-            text-align: center;
-            font-size: 12px;
-            color: #4a5568;
-            padding: 10px;
-        }
-    </style>
+    footer {
+      background-color: #edf2f7;
+      text-align: center;
+      font-size: 12px;
+      color: #4a5568;
+      padding: 10px;
+    }
+  </style>
 </head>
 
 <body>
+  <header>
+    <h1>IJOOZ Delivery Route Optimizer</h1>
+    <a href="index.html" class="back-button">Back to Home</a>
+  </header>
 
-    <header>
-        <h1>IJOOZ Delivery Route Optimizer</h1>
-        <br>
-        <a href="index.html" class="back-button">Back to Home</a>
-    </header>
+  <div id="map"></div>
 
-    <div id="map"></div>
-
-    <div class="content">
-        <div class="stats">
-            <span>4 Stops</span>
-            <span>Total Trip: 25 mins</span>
-        </div>
-
-        <div id="locations">
-            <div class="location" onclick="toggleContainers(0)">
-                <span>IJOOZ Location A</span>
-                <span class="text-xs text-gray-500">Address</span>
-                <div class="expandable-containers">
-                    <div class="square-button green">Green</div>
-                    <div class="square-button red">Red</div>
-                    <div class="square-button yellow">Yellow</div>
-                    <div class="square-button blue">Blue</div>
-                </div>
-            </div>
-            <div class="location" onclick="toggleContainers(1)">
-                <span>IJOOZ Location B</span>
-                <span class="text-xs text-gray-500">Address</span>
-                <div class="expandable-containers">
-                    <div class="square-button green">Green</div>
-                    <div class="square-button red">Red</div>
-                    <div class="square-button yellow">Yellow</div>
-                    <div class="square-button blue">Blue</div>
-                </div>
-            </div>
-            <div class="location" onclick="toggleContainers(2)">
-                <span>IJOOZ Location C</span>
-                <span class="text-xs text-gray-500">Address</span>
-                <div class="expandable-containers">
-                    <div class="square-button green">Green</div>
-                    <div class="square-button red">Red</div>
-                    <div class="square-button yellow">Yellow</div>
-                    <div class="square-button blue">Blue</div>
-                </div>
-            </div>
-            <div class="location" onclick="toggleContainers(3)">
-                <span>IJOOZ Location D</span>
-                <span class="text-xs text-gray-500">Address</span>
-                <div class="expandable-containers">
-                    <div class="square-button green">Green</div>
-                    <div class="square-button red">Red</div>
-                    <div class="square-button yellow">Yellow</div>
-                    <div class="square-button blue">Blue</div>
-                </div>
-            </div>
-        </div>
+  <div class="content">
+    <div class="stats">
+      <span id="stopCount">0 Stops</span>
+      <span id="totalDuration">Total Trip: 0 mins</span>
     </div>
 
-    <footer>
-        &copy; 2025 IJOOZ Route Optimization App
-    </footer>
+    <div id="locations"></div>
+    <button onclick="showTripSummary()" style="margin-top: 20px; width: 100%; padding: 10px; background-color: #0078D7; color: white; border: none; border-radius: 5px;">View Trip Summary</button>
+    <div class="summary" id="routeSummary"></div>
+  </div>
 
-    <script>
-        function toggleContainers(index) {
-            const location = document.querySelectorAll('.location')[index];
-            location.classList.toggle('expanded');
+  <footer>
+    &copy; 2025 IJOOZ Route Optimization App
+  </footer>
+
+  <div id="stop-detail" class="detail-panel" style="display: none;"></div>
+
+    <div id="trip-summary-popup" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1002; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 500px;">
+      <h2 style="text-align: center; font-size: 18px; margin-bottom: 15px;">Route Summary</h2>
+      <div id="trip-summary-content" style="font-size: 14px;"></div>
+      <button onclick="document.getElementById('trip-summary-popup').style.display='none'" style="margin-top: 15px; width: 100%; padding: 10px; background-color: #0078D7; color: white; border: none; border-radius: 5px;">Close Summary</button>
+    </div>
+  </div>
+
+  <script>
+  const IJOOZ_HQ = {
+    id: "HQ",
+    name: "IJOOZ HQ",
+    lat: 1.4375,
+    lng: 103.8355,
+    address: "768736",
+    eta: "10:00",
+    status: "Start",
+  };
+
+  let stops = [
+    { id: "1", name: "IM1l1O04", address: "628555", lat: 1.3218, lng: 103.7071 },
+    { id: "2", name: "IM1l1O05", address: "639441", lat: 1.3324, lng: 103.6938 },
+    { id: "3", name: "IM1l1O06", address: "639441", lat: 1.3324, lng: 103.6938 },
+    { id: "4", name: "IM1l1O64", address: "768731", lat: 1.4385, lng: 103.835 },
+    { id: "5", name: "IM1l1O57", address: "768738", lat: 1.439, lng: 103.834 },
+    { id: "6", name: "IM1l1O76", address: "819651", lat: 1.357, lng: 103.987 },
+  ];
+
+  let map, directionsService, directionsRenderer, markers = [], enrichedStops = [];
+
+  function initMap() {
+    map = new google.maps.Map(document.getElementById("map"), {
+      center: IJOOZ_HQ,
+      zoom: 12,
+    });
+
+    directionsService = new google.maps.DirectionsService();
+    directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true });
+    directionsRenderer.setMap(map);
+
+    renderLocations();
+    updateRoute();
+  }
+
+  function renderLocations() {
+    const container = document.getElementById("locations");
+    container.innerHTML = "";
+    stops.forEach(stop => {
+      const div = document.createElement("div");
+      div.className = "location";
+      div.draggable = true;
+      div.dataset.id = stop.id;
+      div.innerHTML = `<strong>${stop.name}</strong><br/><span>${stop.address}</span>`;
+      div.addEventListener("click", () => showStopDetail(stop));
+      container.appendChild(div);
+    });
+    enableDragAndDrop();
+  }
+
+  function enableDragAndDrop() {
+    const container = document.getElementById("locations");
+    let dragged;
+
+    container.querySelectorAll(".location").forEach(el => {
+      el.addEventListener("dragstart", () => {
+        dragged = el;
+        el.classList.add("dragging");
+      });
+
+      el.addEventListener("dragend", () => {
+        el.classList.remove("dragging");
+      });
+
+      el.addEventListener("dragover", e => {
+        e.preventDefault();
+        const after = el.nextSibling;
+        if (dragged !== el) {
+          container.insertBefore(dragged, after);
         }
+      });
 
-        function initMap() {
-            const stops = [
-                { name: "IJOOZ Location A", lat: 1.3402, lng: 103.8303 },
-                { name: "IJOOZ Location B", lat: 1.3502, lng: 103.8190 },
-                { name: "IJOOZ Location C", lat: 1.3605, lng: 103.8100 },
-                { name: "IJOOZ Location D", lat: 1.3308, lng: 103.8485 },
-            ];
+      el.addEventListener("drop", () => {
+        const newOrder = Array.from(container.querySelectorAll(".location")).map(el => el.dataset.id);
+        stops = newOrder.map(id => stops.find(s => s.id === id));
+        updateRoute();
+      });
+    });
+  }
 
-            const map = new google.maps.Map(document.getElementById("map"), {
-                center: stops[0],
-                zoom: 13,
-            });
+  function getEtaTime(baseTime, secondsToAdd) {
+    const eta = new Date(baseTime.getTime() + secondsToAdd * 1000);
+    return `${eta.getHours().toString().padStart(2, "0")}:${eta.getMinutes().toString().padStart(2, "0")}`;
+  }
 
-            const directionsService = new google.maps.DirectionsService();
-            const directionsRenderer = new google.maps.DirectionsRenderer({
-                suppressMarkers: false,
-            });
-            directionsRenderer.setMap(map);
+  function updateRoute() {
+    const allStops = [IJOOZ_HQ, ...stops, IJOOZ_HQ];
+    const waypoints = allStops.slice(1, -1).map(stop => ({
+      location: { lat: stop.lat, lng: stop.lng },
+      stopover: true,
+    }));
 
-            const waypoints = stops.slice(1, -1).map((stop) => ({
-                location: { lat: stop.lat, lng: stop.lng },
-                stopover: true,
-            }));
+    directionsService.route({
+      origin: allStops[0],
+      destination: allStops[allStops.length - 1],
+      waypoints,
+      travelMode: google.maps.TravelMode.DRIVING,
+    }, (result, status) => {
+      if (status === "OK") {
+        directionsRenderer.setDirections(result);
+        markers.forEach(m => m.setMap(null));
+        markers = [];
 
-            directionsService.route(
-                {
-                    origin: stops[0],
-                    destination: stops[stops.length - 1],
-                    waypoints: waypoints,
-                    travelMode: google.maps.TravelMode.DRIVING,
-                },
-                (result, status) => {
-                    if (status === "OK" && result) {
-                        directionsRenderer.setDirections(result);
-                    } else {
-                        console.error("Directions request failed due to:", status);
-                    }
-                }
-            );
-        }
+        const legs = result.routes[0].legs;
+        const baseTime = new Date("2025-01-01T10:00:00");
+        let totalSeconds = 0;
+        let totalDistance = 0;
+        enrichedStops = [IJOOZ_HQ];
 
-        const script = document.createElement("script");
-        script.src =
-            "https://maps.googleapis.com/maps/api/js?key=AIzaSyA-6lWqnsNnXubz9yi4CFXAAwUkd0Oyv4M&callback=initMap";
-        script.async = true;
-        script.defer = true;
-        document.body.appendChild(script);
-    </script>
+        legs.forEach((leg, i) => {
+          totalSeconds += leg.duration.value;
+          totalDistance += leg.distance.value;
 
+          if (i < stops.length) {
+            stops[i].eta = getEtaTime(baseTime, totalSeconds);
+            stops[i].status = "Pending";
+            enrichedStops.push(stops[i]);
+          }
+        });
+
+        const returnStop = {
+          ...IJOOZ_HQ,
+          eta: getEtaTime(baseTime, totalSeconds),
+          status: "Return"
+        };
+        enrichedStops.push(returnStop);
+
+        document.getElementById("stopCount").innerText = `${stops.length + 2} Stops`;
+        document.getElementById("totalDuration").innerText = `Total Trip: ${Math.round(totalSeconds / 60)} mins`;
+        document.getElementById("totalDistance")?.remove(); // remove old distance line
+
+        const distLine = document.createElement("div");
+        distLine.id = "totalDistance";
+        distLine.innerText = `Total Distance: ${(totalDistance / 1000).toFixed(1)} km`;
+        document.querySelector(".stats").appendChild(distLine);
+
+        enrichedStops.forEach((stop, i) => {
+          const pos = i === 0 ? legs[0].start_location
+                    : i === enrichedStops.length - 1 ? legs[legs.length - 1].end_location
+                    : legs[i - 1].end_location;
+
+          const marker = new google.maps.Marker({
+            position: pos,
+            map,
+            label: {
+              text: String.fromCharCode(65 + i),
+              color: "white",
+              fontWeight: "bold",
+            },
+          });
+
+          marker.addListener("click", () => showStopDetail(stop));
+          markers.push(marker);
+        });
+      }
+    });
+  }
+
+  function showStopDetail(stop) {
+    const panel = document.getElementById("stop-detail");
+    panel.innerHTML = `
+      <h2>${stop.name}</h2>
+      <p><strong>Address:</strong> ${stop.address || "N/A"}<br/>
+      <strong>ETA:</strong> ${stop.eta || "-"}<br/>
+      <strong>Status:</strong> ${stop.status || "-"}</p>
+      <div class="grid">
+        <button class="camera">📷</button>
+        <button class="complete">✔️</button>
+        <button class="fail">❌</button>
+        <button class="parcel">📦</button>
+      </div>
+      <button class="close-btn" onclick="document.getElementById('stop-detail').style.display='none'">Close</button>
+    `;
+    panel.style.display = "block";
+  }
+
+  function showTripSummary() {
+    const summaryDiv = document.getElementById("trip-summary-content");
+
+    let html = `<p><strong>Total Stops:</strong> ${enrichedStops.length}<br/>`;
+    html += `<strong>Total Duration:</strong> ${document.getElementById("totalDuration").innerText.split(': ')[1]}<br/>`;
+    const dist = document.getElementById("totalDistance");
+    if (dist) html += `<strong>${dist.innerText}</strong><br/></p>`;
+    html += `<ol style="padding-left: 18px;">`;
+
+    enrichedStops.forEach(stop => {
+      html += `<li><strong>${stop.name}</strong> – ${stop.address || 'N/A'} – ETA: ${stop.eta || '-'}</li>`;
+    });
+
+    html += `</ol>`;
+    summaryDiv.innerHTML = html;
+    document.getElementById("trip-summary-popup").style.display = "flex";
+  }
+
+  const script = document.createElement("script");
+  script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyA-6lWqnsNnXubz9yi4CFXAAwUkd0Oyv4M&callback=initMap";
+  script.async = true;
+  script.defer = true;
+  document.body.appendChild(script);
+</script>
 </body>
-
 </html>
