@@ -75,10 +75,7 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
       font-size: 14px;
       cursor: grab;
-    }
-
-    .location.dragging {
-      opacity: 0.5;
+      touch-action: none;
     }
 
     .detail-panel {
@@ -139,7 +136,6 @@
     }
   </style>
 </head>
-
 <body>
   <header>
     <h1>IJOOZ Delivery Route Optimizer</h1>
@@ -165,7 +161,7 @@
 
   <div id="stop-detail" class="detail-panel" style="display: none;"></div>
 
-    <div id="trip-summary-popup" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1002; align-items: center; justify-content: center;">
+  <div id="trip-summary-popup" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1002; align-items: center; justify-content: center;">
     <div style="background: white; padding: 20px; border-radius: 8px; width: 90%; max-width: 500px;">
       <h2 style="text-align: center; font-size: 18px; margin-bottom: 15px;">Route Summary</h2>
       <div id="trip-summary-content" style="font-size: 14px;"></div>
@@ -173,206 +169,187 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <script>
-  const IJOOZ_HQ = {
-    id: "HQ",
-    name: "IJOOZ HQ",
-    lat: 1.4375,
-    lng: 103.8355,
-    address: "768736",
-    eta: "10:00",
-    status: "Start",
-  };
+    const IJOOZ_HQ = {
+      id: "HQ",
+      name: "IJOOZ HQ",
+      lat: 1.4375,
+      lng: 103.8355,
+      address: "768736",
+      eta: "10:00",
+      status: "Start",
+    };
 
-  let stops = [
-    { id: "1", name: "IM1l1O04", address: "628555", lat: 1.3218, lng: 103.7071 },
-    { id: "2", name: "IM1l1O05", address: "639441", lat: 1.3324, lng: 103.6938 },
-    { id: "3", name: "IM1l1O06", address: "639441", lat: 1.3324, lng: 103.6938 },
-    { id: "4", name: "IM1l1O64", address: "768731", lat: 1.4385, lng: 103.835 },
-    { id: "5", name: "IM1l1O57", address: "768738", lat: 1.439, lng: 103.834 },
-    { id: "6", name: "IM1l1O76", address: "819651", lat: 1.357, lng: 103.987 },
-  ];
+    let stops = [
+      { id: "1", name: "IM1l1O04", address: "628555", lat: 1.3218, lng: 103.7071 },
+      { id: "2", name: "IM1l1O05", address: "639441", lat: 1.3324, lng: 103.6938 },
+      { id: "3", name: "IM1l1O64", address: "768731", lat: 1.4385, lng: 103.835 },
+      { id: "4", name: "IM1l1O57", address: "768738", lat: 1.439, lng: 103.834 },
+      { id: "5", name: "IM1l1O76", address: "819651", lat: 1.357, lng: 103.987 },
+    ];
 
-  let map, directionsService, directionsRenderer, markers = [], enrichedStops = [];
+    let map, directionsService, directionsRenderer, markers = [], enrichedStops = [];
 
-  function initMap() {
-    map = new google.maps.Map(document.getElementById("map"), {
-      center: IJOOZ_HQ,
-      zoom: 12,
-    });
-
-    directionsService = new google.maps.DirectionsService();
-    directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true });
-    directionsRenderer.setMap(map);
-
-    renderLocations();
-    updateRoute();
-  }
-
-  function renderLocations() {
-    const container = document.getElementById("locations");
-    container.innerHTML = "";
-    stops.forEach(stop => {
-      const div = document.createElement("div");
-      div.className = "location";
-      div.draggable = true;
-      div.dataset.id = stop.id;
-      div.innerHTML = `<strong>${stop.name}</strong><br/><span>${stop.address}</span>`;
-      div.addEventListener("click", () => showStopDetail(stop));
-      container.appendChild(div);
-    });
-    enableDragAndDrop();
-  }
-
-  function enableDragAndDrop() {
-    const container = document.getElementById("locations");
-    let dragged;
-
-    container.querySelectorAll(".location").forEach(el => {
-      el.addEventListener("dragstart", () => {
-        dragged = el;
-        el.classList.add("dragging");
+    function initMap() {
+      map = new google.maps.Map(document.getElementById("map"), {
+        center: IJOOZ_HQ,
+        zoom: 12,
       });
 
-      el.addEventListener("dragend", () => {
-        el.classList.remove("dragging");
+      directionsService = new google.maps.DirectionsService();
+      directionsRenderer = new google.maps.DirectionsRenderer({ suppressMarkers: true });
+      directionsRenderer.setMap(map);
+
+      renderLocations();
+      updateRoute();
+    }
+
+    function renderLocations() {
+      const container = document.getElementById("locations");
+      container.innerHTML = "";
+      stops.forEach(stop => {
+        const div = document.createElement("div");
+        div.className = "location";
+        div.dataset.id = stop.id;
+        div.innerHTML = `<strong>${stop.name}</strong><br/><span>${stop.address}</span>`;
+        div.addEventListener("click", () => showStopDetail(stop));
+        container.appendChild(div);
       });
 
-      el.addEventListener("dragover", e => {
-        e.preventDefault();
-        const after = el.nextSibling;
-        if (dragged !== el) {
-          container.insertBefore(dragged, after);
+      enableDragAndDrop();
+    }
+
+    function enableDragAndDrop() {
+      Sortable.create(document.getElementById("locations"), {
+        animation: 150,
+        onEnd: function (evt) {
+          const newOrder = Array.from(evt.to.children).map(div => div.dataset.id);
+          stops = newOrder.map(id => stops.find(s => s.id === id));
+          updateRoute();
         }
       });
+    }
 
-      el.addEventListener("drop", () => {
-        const newOrder = Array.from(container.querySelectorAll(".location")).map(el => el.dataset.id);
-        stops = newOrder.map(id => stops.find(s => s.id === id));
-        updateRoute();
-      });
-    });
-  }
+    function getEtaTime(baseTime, secondsToAdd) {
+      const eta = new Date(baseTime.getTime() + secondsToAdd * 1000);
+      return `${eta.getHours().toString().padStart(2, "0")}:${eta.getMinutes().toString().padStart(2, "0")}`;
+    }
 
-  function getEtaTime(baseTime, secondsToAdd) {
-    const eta = new Date(baseTime.getTime() + secondsToAdd * 1000);
-    return `${eta.getHours().toString().padStart(2, "0")}:${eta.getMinutes().toString().padStart(2, "0")}`;
-  }
+    function updateRoute() {
+      const allStops = [IJOOZ_HQ, ...stops, IJOOZ_HQ];
+      const waypoints = allStops.slice(1, -1).map(stop => ({
+        location: { lat: stop.lat, lng: stop.lng },
+        stopover: true,
+      }));
 
-  function updateRoute() {
-    const allStops = [IJOOZ_HQ, ...stops, IJOOZ_HQ];
-    const waypoints = allStops.slice(1, -1).map(stop => ({
-      location: { lat: stop.lat, lng: stop.lng },
-      stopover: true,
-    }));
+      directionsService.route({
+        origin: allStops[0],
+        destination: allStops[allStops.length - 1],
+        waypoints,
+        travelMode: google.maps.TravelMode.DRIVING,
+      }, (result, status) => {
+        if (status === "OK") {
+          directionsRenderer.setDirections(result);
+          markers.forEach(m => m.setMap(null));
+          markers = [];
 
-    directionsService.route({
-      origin: allStops[0],
-      destination: allStops[allStops.length - 1],
-      waypoints,
-      travelMode: google.maps.TravelMode.DRIVING,
-    }, (result, status) => {
-      if (status === "OK") {
-        directionsRenderer.setDirections(result);
-        markers.forEach(m => m.setMap(null));
-        markers = [];
+          const legs = result.routes[0].legs;
+          const baseTime = new Date("2025-01-01T10:00:00");
+          let totalSeconds = 0;
+          let totalDistance = 0;
+          enrichedStops = [IJOOZ_HQ];
 
-        const legs = result.routes[0].legs;
-        const baseTime = new Date("2025-01-01T10:00:00");
-        let totalSeconds = 0;
-        let totalDistance = 0;
-        enrichedStops = [IJOOZ_HQ];
+          legs.forEach((leg, i) => {
+            totalSeconds += leg.duration.value;
+            totalDistance += leg.distance.value;
 
-        legs.forEach((leg, i) => {
-          totalSeconds += leg.duration.value;
-          totalDistance += leg.distance.value;
-
-          if (i < stops.length) {
-            stops[i].eta = getEtaTime(baseTime, totalSeconds);
-            stops[i].status = "Pending";
-            enrichedStops.push(stops[i]);
-          }
-        });
-
-        const returnStop = {
-          ...IJOOZ_HQ,
-          eta: getEtaTime(baseTime, totalSeconds),
-          status: "Return"
-        };
-        enrichedStops.push(returnStop);
-
-        document.getElementById("stopCount").innerText = `${stops.length + 2} Stops`;
-        document.getElementById("totalDuration").innerText = `Total Trip: ${Math.round(totalSeconds / 60)} mins`;
-        document.getElementById("totalDistance")?.remove(); // remove old distance line
-
-        const distLine = document.createElement("div");
-        distLine.id = "totalDistance";
-        distLine.innerText = `Total Distance: ${(totalDistance / 1000).toFixed(1)} km`;
-        document.querySelector(".stats").appendChild(distLine);
-
-        enrichedStops.forEach((stop, i) => {
-          const pos = i === 0 ? legs[0].start_location
-                    : i === enrichedStops.length - 1 ? legs[legs.length - 1].end_location
-                    : legs[i - 1].end_location;
-
-          const marker = new google.maps.Marker({
-            position: pos,
-            map,
-            label: {
-              text: String.fromCharCode(65 + i),
-              color: "white",
-              fontWeight: "bold",
-            },
+            if (i < stops.length) {
+              stops[i].eta = getEtaTime(baseTime, totalSeconds);
+              stops[i].status = "Pending";
+              enrichedStops.push(stops[i]);
+            }
           });
 
-          marker.addListener("click", () => showStopDetail(stop));
-          markers.push(marker);
-        });
-      }
-    });
-  }
+          const returnStop = {
+            ...IJOOZ_HQ,
+            eta: getEtaTime(baseTime, totalSeconds),
+            status: "Return"
+          };
+          enrichedStops.push(returnStop);
 
-  function showStopDetail(stop) {
-    const panel = document.getElementById("stop-detail");
-    panel.innerHTML = `
-      <h2>${stop.name}</h2>
-      <p><strong>Address:</strong> ${stop.address || "N/A"}<br/>
-      <strong>ETA:</strong> ${stop.eta || "-"}<br/>
-      <strong>Status:</strong> ${stop.status || "-"}</p>
-      <div class="grid">
-        <button class="camera">📷</button>
-        <button class="complete">✔️</button>
-        <button class="fail">❌</button>
-        <button class="parcel">📦</button>
-      </div>
-      <button class="close-btn" onclick="document.getElementById('stop-detail').style.display='none'">Close</button>
-    `;
-    panel.style.display = "block";
-  }
+          document.getElementById("stopCount").innerText = `${stops.length + 2} Stops`;
+          document.getElementById("totalDuration").innerText = `Total Trip: ${Math.round(totalSeconds / 60)} mins`;
+          document.getElementById("totalDistance")?.remove();
 
-  function showTripSummary() {
-    const summaryDiv = document.getElementById("trip-summary-content");
+          const distLine = document.createElement("div");
+          distLine.id = "totalDistance";
+          distLine.innerText = `Total Distance: ${(totalDistance / 1000).toFixed(1)} km`;
+          document.querySelector(".stats").appendChild(distLine);
 
-    let html = `<p><strong>Total Stops:</strong> ${enrichedStops.length}<br/>`;
-    html += `<strong>Total Duration:</strong> ${document.getElementById("totalDuration").innerText.split(': ')[1]}<br/>`;
-    const dist = document.getElementById("totalDistance");
-    if (dist) html += `<strong>${dist.innerText}</strong><br/></p>`;
-    html += `<ol style="padding-left: 18px;">`;
+          enrichedStops.forEach((stop, i) => {
+            const pos = i === 0 ? legs[0].start_location
+                      : i === enrichedStops.length - 1 ? legs[legs.length - 1].end_location
+                      : legs[i - 1].end_location;
 
-    enrichedStops.forEach(stop => {
-      html += `<li><strong>${stop.name}</strong> – ${stop.address || 'N/A'} – ETA: ${stop.eta || '-'}</li>`;
-    });
+            const marker = new google.maps.Marker({
+              position: pos,
+              map,
+              label: {
+                text: String.fromCharCode(65 + i),
+                color: "white",
+                fontWeight: "bold",
+              },
+            });
 
-    html += `</ol>`;
-    summaryDiv.innerHTML = html;
-    document.getElementById("trip-summary-popup").style.display = "flex";
-  }
+            marker.addListener("click", () => showStopDetail(stop));
+            markers.push(marker);
+          });
+        }
+      });
+    }
 
-  const script = document.createElement("script");
-  script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyA-6lWqnsNnXubz9yi4CFXAAwUkd0Oyv4M&callback=initMap";
-  script.async = true;
-  script.defer = true;
-  document.body.appendChild(script);
-</script>
+    function showStopDetail(stop) {
+      const panel = document.getElementById("stop-detail");
+      panel.innerHTML = `
+        <h2>${stop.name}</h2>
+        <p><strong>Address:</strong> ${stop.address || "N/A"}<br/>
+        <strong>ETA:</strong> ${stop.eta || "-"}<br/>
+        <strong>Status:</strong> ${stop.status || "-"}</p>
+        <div class="grid">
+          <button class="camera">📷</button>
+          <button class="complete">✔️</button>
+          <button class="fail">❌</button>
+          <button class="parcel">📦</button>
+        </div>
+        <button class="close-btn" onclick="document.getElementById('stop-detail').style.display='none'">Close</button>
+      `;
+      panel.style.display = "block";
+    }
+
+    function showTripSummary() {
+      const summaryDiv = document.getElementById("trip-summary-content");
+
+      let html = `<p><strong>Total Stops:</strong> ${enrichedStops.length}<br/>`;
+      html += `<strong>Total Duration:</strong> ${document.getElementById("totalDuration").innerText.split(': ')[1]}<br/>`;
+      const dist = document.getElementById("totalDistance");
+      if (dist) html += `<strong>${dist.innerText}</strong><br/></p>`;
+      html += `<ol style="padding-left: 18px;">`;
+
+      enrichedStops.forEach(stop => {
+        html += `<li><strong>${stop.name}</strong> – ${stop.address || 'N/A'} – ETA: ${stop.eta || '-'}</li>`;
+      });
+
+      html += `</ol>`;
+      summaryDiv.innerHTML = html;
+      document.getElementById("trip-summary-popup").style.display = "flex";
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyA-6lWqnsNnXubz9yi4CFXAAwUkd0Oyv4M&callback=initMap";
+    script.async = true;
+    script.defer = true;
+    document.body.appendChild(script);
+  </script>
 </body>
 </html>
