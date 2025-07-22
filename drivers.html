@@ -174,20 +174,26 @@
     const IJOOZ_HQ = {
       id: "HQ",
       name: "IJOOZ HQ",
-      lat: 1.4375,
-      lng: 103.8355,
+      lat: 1.44127,
+      lng: 103.83532,
       address: "768736",
       eta: "10:00",
       status: "Start",
     };
 
     let stops = [
-      { id: "1", name: "IM1l1O04", address: "628555", lat: 1.3218, lng: 103.7071 },
-      { id: "2", name: "IM1l1O05", address: "639441", lat: 1.3324, lng: 103.6938 },
-      { id: "3", name: "IM1l1O64", address: "768731", lat: 1.4385, lng: 103.835 },
-      { id: "4", name: "IM1l1O57", address: "768738", lat: 1.439, lng: 103.834 },
-      { id: "5", name: "IM1l1O76", address: "819651", lat: 1.357, lng: 103.987 },
+      { id: "1", name: "12345678", address: "768736", lat: 1.44127, lng: 103.83532 },
+      { id: "2", name: "IM1l0123", address: "797435", lat: 1.4069, lng: 103.8597 },
+      { id: "3", name: "IM1l0135", address: "828700", lat: 1.4005, lng: 103.8977 },
+      { id: "4", name: "IM1l0139", address: "417940", lat: 1.3329, lng: 103.9043 },
+      { id: "5", name: "IM1l0138", address: "339156", lat: 1.317, lng: 103.8661 },
+      { id: "6", name: "IM1l0137", address: "48623", lat: 1.2847, lng: 103.8522 },
+      { id: "7", name: "IM1l0129", address: "609261", lat: 1.3012, lng: 103.7537 },
+      { id: "8", name: "IM1l0131", address: "608619", lat: 1.3136, lng: 103.7314 },
+      { id: "9", name: "IM1l0125", address: "619864", lat: 1.3356, lng: 103.7148 },
+      { id: "10", name: "IDlO1l2", address: "649845", lat: 1.3441, lng: 103.7204 },
     ];
+
 
     let map, directionsService, directionsRenderer, markers = [], enrichedStops = [];
 
@@ -346,7 +352,7 @@
     }
 
     const script = document.createElement("script");
-    script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyA-6lWqnsNnXubz9yi4CFXAAwUkd0Oyv4M&callback=initMap";
+    script.src = "https://maps.googleapis.com/maps/api/js?key=AIzaSyCrGyYjOkvmo0ziQt109e_pCyQJSaBqpJA&callback=initMap";
     script.async = true;
     script.defer = true;
     document.body.appendChild(script);
