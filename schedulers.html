@@ -88,6 +88,7 @@
         <button>Click here to update QR code</button><br><br>
         <img id='barcode' src="https://api.qrserver.com/v1/create-qr-code/?data=HelloWorld&amp;size=100x100" alt="" title="QR code" width="250" height="250" />
         <br>Click image to download
+        <br><br> Scan for Drivers' page<br><img src="barcodeDriverPage.png">
     </div>
 </div>
 
@@ -97,10 +98,8 @@
         var url = 'https://api.qrserver.com/v1/create-qr-code/?data=' + QRitem + '&amp;size=50x50';
         $('#barcode').attr('src', url);
     }
-
     document.getElementById('barcode').addEventListener('click', function () {
         const imageUrl = this.src;
-
         fetch(imageUrl)
             .then(response => response.blob())
             .then(blob => {
