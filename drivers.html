@@ -157,6 +157,7 @@
     }
     .summary-table {
       width: 100%; border-collapse: collapse;
+      /* alternating row colors */
     }
     .summary-table th,
     .summary-table td {
@@ -166,6 +167,9 @@
     .summary-table th {
       background: #f7fafc; font-weight: bold;
     }
+    .summary-table tbody tr:nth-child(odd)  { background-color: white; }
+    .summary-table tbody tr:nth-child(even) { background-color: #fff3e0; }
+
     .summary-close-btn {
       margin-top: 20px;
       width: 100%; padding: 12px;
@@ -188,7 +192,11 @@
       <span id="totalDuration">Total Trip: 0 mins</span>
     </div>
     <div id="locations"></div>
-    <button onclick="showTripSummary()" style="margin-top:20px; width:100%; padding:10px; background:#0078D7; color:white; border:none; border-radius:5px;">
+    <button
+      onclick="showTripSummary()"
+      style="margin-top:20px;width:100%;padding:10px;
+             background:#0078D7;color:white;border:none;
+             border-radius:5px;">
       View Trip Summary
     </button>
   </div>
@@ -202,12 +210,18 @@
       <table class="summary-table">
         <thead>
           <tr>
-            <th>#</th><th>Pantry ID</th><th>Postal Code</th><th>ETA</th><th>Deliver By</th>
+            <th>#</th>
+            <th>Pantry ID</th>
+            <th>Postal Code</th>
+            <th>ETA</th>
+            <th>Deadline</th>
           </tr>
         </thead>
         <tbody id="summary-body"></tbody>
       </table>
-      <button class="summary-close-btn" onclick="document.getElementById('trip-summary-popup').style.display='none'">
+      <button
+        class="summary-close-btn"
+        onclick="document.getElementById('trip-summary-popup').style.display='none'">
         Close Summary
       </button>
     </div>
@@ -217,7 +231,7 @@
   <script>
     function timeToMinutes(t) {
       const [h,m] = t.split(":").map(Number);
-      return h*60 + m;
+      return h*60+m;
     }
 
     const IJOOZ_HQ = {
@@ -228,18 +242,19 @@
       address: "768736"
     };
 
-    let stops = [
-      { id:"1",  name:"12345678", address:"768736", lat:1.44127, lng:103.83532 },
-      { id:"2",  name:"IM1l0123", address:"797435", lat:1.4069,  lng:103.8597, deadline:"11:30" },
-      { id:"3",  name:"IM1l0135", address:"828700", lat:1.4005,  lng:103.8977 },
-      { id:"4",  name:"IM1l0139", address:"417940", lat:1.3329,  lng:103.9043, deadline:"12:30" },
-      { id:"5",  name:"IM1l0138", address:"339156", lat:1.317,   lng:103.8661 },
-      { id:"6",  name:"IM1l0137", address:"48623",  lat:1.2847,  lng:103.8522 },
-      { id:"7",  name:"IM1l0129", address:"609261", lat:1.3012,  lng:103.7537 },
-      { id:"8",  name:"IM1l0131", address:"608619", lat:1.3136,  lng:103.7314 },
-      { id:"9",  name:"IM1l0125", address:"619864", lat:1.3356,  lng:103.7148 },
-      { id:"10", name:"IDlO1l2",  address:"649845", lat:1.3441,  lng:103.7204 }
-    ];
+  let stops = [
+  { id: "1", name: "Nanyang Drive", address: "638075", lat: 1.3483, lng: 103.6816, qr_code: "IM1l0267" },
+  { id: "2", name: "Pasir Laba Road", address: "637559", lat: 1.3339, lng: 103.6713, qr_code: "IM1l0783", deadline: "11:30" },
+  { id: "3", name: "Tuas South Avenue 5", address: "637363", lat: 1.2736, lng: 103.6204, qr_code: "IM1l0629" },
+  { id: "4", name: "Tuas View Circuit", address: "637359", lat: 1.2899, lng: 103.6318, qr_code: "IM1l0392", deadline: "12:30" },
+  { id: "5", name: "Tuas South Avenue 14", address: "637312", lat: 1.2734, lng: 103.6237, qr_code: "IM1l0619" },
+  { id: "6", name: "Loyang Way", address: "508726", lat: 1.3772, lng: 103.9744, qr_code: "IM1l0445" },
+  { id: "7", name: "Upavon Road", address: "507739", lat: 1.3891, lng: 103.9832, qr_code: "IM1l0597" },
+  { id: "8", name: "Mariam Way", address: "507079", lat: 1.3589, lng: 103.9685, qr_code: "IM1l0366" },
+  { id: "9", name: "Changi North Street 1", address: "498816", lat: 1.3525, lng: 103.9674, qr_code: "IM1l0590" },
+  { id: "10", name: "Changi North Way", address: "498813", lat: 1.3527, lng: 103.9752, qr_code: "IM1l0407" }
+];
+
 
     let map, directionsService, directionsRenderer, markers = [], enrichedStops = [], lastOrder = [];
 
@@ -326,7 +341,7 @@
           secs += leg.duration.value;
           dist += leg.distance.value;
           if (i < stops.length) {
-            stops[i].eta = getEtaTime(base, secs);
+            stops[i].eta    = getEtaTime(base, secs);
             stops[i].status = "Pending";
             enrichedStops.push(stops[i]);
           }
@@ -351,7 +366,7 @@
         document.querySelectorAll('.location').forEach(div => {
           const s = enrichedStops.find(x => x.id === div.dataset.id);
           if (s) {
-            div.querySelector('.location-eta').innerHTML = `<strong>ETA:</strong> ${s.eta}`;
+            div.querySelector('.location-eta').innerHTML    = `<strong>ETA:</strong> ${s.eta}`;
             div.querySelector('.location-status').innerHTML = `<strong>Status:</strong> ${s.status}`;
           }
         });
@@ -360,7 +375,6 @@
           const v = stops.find(s => s.deadline && timeToMinutes(s.eta) > timeToMinutes(s.deadline));
           if (v) {
             alert(`Cannot place stop ${v.name} past its Deliver by time of ${v.deadline}.`);
-            // revert
             const ids = lastOrder.map(s => s.id);
             stops = lastOrder.slice();
             Sortable.get(document.getElementById("locations")).sort(ids);
@@ -430,6 +444,8 @@
       document.getElementById("trip-summary-popup").style.display = "flex";
     }
   </script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCrGyYjOkvmo0ziQt109e_pCyQJSaBqpJA&callback=initMap" async defer></script>
+  <script
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCrGyYjOkvmo0ziQt109e_pCyQJSaBqpJA&callback=initMap"
+    async defer></script>
 </body>
 </html>
